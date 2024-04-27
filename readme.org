@@ -1,0 +1,37 @@
+
+* Data
+
+** =/klines=
+
+- =volume=: 成交量, 单位"手"
+- =amount=: 成交额, 单位元
+- =open=, =high=, =low=, =close=: 开盘, 最高, 最低, 收盘
+- =chg=, =percent=: 涨跌, 涨跌幅
+- =turnoverrate=: 换手
+
+* Sections
+
+** Timeline
+
+top level /filter/, focus on certain time range
+
+** Map
+
+- two tabs
+  - province level sum of =amount=
+  - province level sum of company market value
+- hover
+  - use d3-tip to display top 5 stocks of certain tab
+- click
+  - change /filter/ to focus the province
+  - re-plot Wordcloud and IndustryBar
+    
+** Wordcloud
+
+- attr words with weights, proportional to companies' market value
+- 
+
+** IndustryBar
+
+- 
+
