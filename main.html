@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Vis</title>
+    <!-- Add any additional CSS or JS libraries here -->
+    <script src="d3.min.js"></script>
+    <script src="d3-v6-tip.js"></script>
+    <link rel="stylesheet" href="d3-tip.css">
+    <style>
+        /* Add CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        #timeline {
+            /* Customize styles for timeline section */
+        }
+
+        .brush .handle,
+        .brush .handle--e {
+            fill: steelblue;
+            stroke: none;
+        }
+
+        #map {
+            /* Customize styles for map section */
+        }
+
+        #industryBar {
+            /* Customize styles for industry bar section */
+        }
+
+        #wordcloud {
+            /* Customize styles for wordcloud section */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="timeline" class="section">
+        <!-- Timeline section -->
+        <svg width="1920" height="200"></svg>
+    </div>
+    <div id="map" class="section">
+        <!-- Map section -->
+        <svg width="500" height="300"></svg>
+    </div>
+    <div id="industryBar" class="section">
+        <!-- IndustryBar section -->
+        <svg width="500" height="200"></svg>
+    </div>
+    <div id="wordcloud" class="section">
+        <!-- Wordcloud section -->
+        <svg width="500" height="300"></svg>
+    </div>
+
+    <script>
+        // JavaScript code to create visualizations will go here
+        // D3.js will be used to manipulate the DOM and draw the graphs
+
+        // Set the dimensions and margins of the graph
+        const margin = { top: 20, right: 20, bottom: 20, left: 50 },
+            width = 1920 - margin.left - margin.right,
+            height = 200 - margin.top - margin.bottom;
+
+        // Timeline placeholder
+        const timelineSvg = d3.select("#timeline svg");
+        timelineSvg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Map placeholder
+        const mapSvg = d3.select("#map svg");
+        mapSvg.append("text")
+            .attr("x", 250)
+            .attr("y", 150)
+            .text("Map Placeholder")
+            .attr("text-anchor", "middle")
+            .style("font-size", "20px");
+
+        // IndustryBar placeholder
+        const industryBarSvg = d3.select("#industryBar svg");
+        industryBarSvg.append("text")
+            .attr("x", 250)
+            .attr("y", 100)
+            .text("IndustryBar Placeholder")
+            .attr("text-anchor", "middle")
+            .style("font-size", "20px");
+
+        // Wordcloud placeholder
+        const wordcloudSvg = d3.select("#wordcloud svg");
+        wordcloudSvg.append("text")
+            .attr("x", 250)
+            .attr("y", 150)
+            .text("Wordcloud Placeholder")
+            .attr("text-anchor", "middle")
+            .style("font-size", "20px");
+
+        // Load data
+        fetch("data.json").then(resp => resp.json()).then(data => {
+            console.log("data:", data);
+
+
+            var timeL, timeR;
+            { // draw timeline
+                const timelineData = data["klines"]["SH000001"];
+                console.log(timelineData);
+
+                // Set the ranges
+                const x = d3.scaleTime().range([0, width]);
+                const y = d3.scaleLinear().range([height, 0]);
+
+                // Parse the timestamp strings into Date objects
+                const parseTime = d3.timeParse("%Q");
+
+                // Define the line
+                const valueline = d3.line()
+                    .x(d => x(d[0]))
+                    .y(d => y(d[5]));
+
+                // Scale the range of the data with padding
+                x.domain(
+                    [d3.min(timelineData, d => parseTime(d[0])),
+                    d3.max(timelineData, d => parseTime(d[0]))]
+                );
+                y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
+
+                // Add the valueline path
+                timelineSvg.append("path")
+                    .data([timelineData])
+                    .attr("class", "line")
+                    .attr("d", valueline)
+                    .style("fill", "none") // Remove area fill
+                    .style("stroke", "steelblue") // Set line color
+                    .style("stroke-width", 2); // Set line width
+
+                // Add the X Axis
+                timelineSvg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x).ticks(d3.timeYear))
+                    .selectAll("text")
+                    .attr("y", 0)
+                    .attr("x", 9)
+                    .attr("dy", ".35em")
+                    .attr("transform", "rotate(45)")
+                    .style("text-anchor", "start");
+
+                // Define a brush
+                const brush = d3.brushX()
+                    .extent([[0, 0], [width, height]])
+                    .on("start brush end", brushed);
+
+                // Append the brush to the SVG
+                const brushGroup = timelineSvg.append("g")
+                    .attr("class", "brush")
+                    .call(brush);
+
+                // Function to handle brush events
+                function brushed(e) {
+                    const selection = e.selection;
+                    if (selection) {
+                        // Get the selected time range
+                        const startTime = x.invert(selection[0]);
+                        const endTime = x.invert(selection[1]);
+
+                        // Print selected time range
+                        console.log("Selected time range:", startTime, endTime);
+                        timeL = startTime, timeR = endTime
+                    } else {
+                    }
+                }
+            }
+
+            {// draw Map
+
+            }
+
+            {// draw IndustryBar
+
+            }
+
+            {// draw Wordcloud
+
+            }
+        })
+    </script>
+</body>
+
+</html>
