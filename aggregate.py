@@ -2,22 +2,34 @@
 import os
 from glob import glob
 import json
+from tqdm import tqdm
 
 klines = {}
-for path in glob("data/klines/*.json"):
+for path in tqdm(glob("data/klines/*.json")):
     with open(path) as f:
         kline = json.load(f)
     symbol = kline["data"]["symbol"]
     kline_data = kline["data"]["item"][::10]
     klines[symbol] = kline_data
+
+ind_dict = {}
+with open("data/industries.json") as f:
+    ind_dict = {
+        ind["encode"]: ind["name"] for ind in json.load(f)["data"]["industries"]}
     
 inds = {}
 for path in glob("data/industries/*.json"):
     encode = os.path.splitext(os.path.split(path)[-1])[0]
     with open(path) as f:
         ind = json.load(f)
-    inds[encode] = ind["data"]["list"]
-    
+    l = []
+    for stock in ind["data"]["list"]:
+        if stock["symbol"] not in klines:
+            print(stock["symbol"])
+            continue
+        l.append(stock["symbol"])
+    inds[ind_dict[encode]] = l
+
 comps = {}
 for path in glob("data/companies/*.json"):
     symbol = os.path.splitext(os.path.split(path)[-1])[0]
@@ -27,18 +39,18 @@ for path in glob("data/companies/*.json"):
     comps[symbol] = comp
 
 provinces = {}
-for symbol, comp in comps.items():
+for symbol, comp in tqdm(comps.items()):
     if comp["provincial_name"] not in provinces:
         provinces[comp["provincial_name"]] = [symbol,]
     else:
         provinces[comp["provincial_name"]].append(symbol)
-    
+
 with open("data/list.json") as f:
     all_l = json.load(f)["data"]["list"]
-    
+
 with open("data/industries.json") as f:
     ind_l = json.load(f)["data"]["industries"]
-    
+
 data = {
     "all_list": all_l,
     "ind_list": ind_l,
@@ -50,4 +62,3 @@ data = {
 
 with open("data.json", "w") as f:
     json.dump(data, f, ensure_ascii=False)
-    
