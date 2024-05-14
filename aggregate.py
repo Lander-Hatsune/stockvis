@@ -4,7 +4,6 @@ from glob import glob
 import json
 from tqdm import tqdm
 import jieba
-from stopwordsiso import stopwords
 
 klines = {}
 for path in tqdm(glob("data/klines/*.json")):
@@ -47,8 +46,10 @@ for symbol, comp in tqdm(comps.items()):
     else:
         provinces[comp["provincial_name"]].append(symbol)
 
-stopwords = stopwords("cn")
-for k, comp in comps.items():
+with open("stopwords.txt") as f:
+    stopwords = set(f.read().split('\n'))
+
+for k, comp in tqdm(comps.items()):
     s = comp["operating_scope"] or "" + \
         comp["main_operation_business"] or "" + \
         comp["org_cn_introduction"] or ""
