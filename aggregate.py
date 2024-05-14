@@ -25,6 +25,13 @@ for path in glob("data/companies/*.json"):
         comp = json.load(f)
     comp = comp["data"]["company"]
     comps[symbol] = comp
+
+provinces = {}
+for symbol, comp in comps.items():
+    if comp["provincial_name"] not in provinces:
+        provinces[comp["provincial_name"]] = [symbol,]
+    else:
+        provinces[comp["provincial_name"]].append(symbol)
     
 with open("data/list.json") as f:
     all_l = json.load(f)["data"]["list"]
@@ -38,6 +45,7 @@ data = {
     "industries": inds,
     "companies": comps,
     "klines": klines,
+    "provinces": provinces,
 }
 
 with open("data.json", "w") as f:
