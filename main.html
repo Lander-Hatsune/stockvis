@@ -185,7 +185,7 @@
                     const mapData = Object.entries(data.provinces).map(([fullname, list]) => {
                         value = list.reduce(
                             (acc, item) => {
-                                val = data.klines[item].reduce((acc, k) => acc + k[1], 0);
+                                val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
                                 return acc + val;
                             },
                             0
@@ -282,12 +282,15 @@
 
                 const industryData = Object.entries(data.industries).map(([name, list]) => {
                     value = list.reduce((acc, item) => {
-                        console.log(item);
-                        val = data.klines[item].reduce((acc, k) => acc + k[1], 0);
+                        val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
                         return acc + val;
                     }, 0);
-                    // value = Math.log(value);
-                    return { name, value };
+                    rate = list.reduce((acc, item) => {
+                        val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
+                        return acc + val;
+                    }, 0);
+                    value = value / 100000000;
+                    return { name, value, rate };
                 }).sort((a, b) => b.value - a.value).slice(0, 30);
 
                 // Create scales for the x and y axes
@@ -317,6 +320,9 @@
 
                 industryBarSvg.call(tip);
 
+                const color = d3.scaleSequential(d3.interpolateRdYlGn) // RdYlGn, PiYG
+                    .domain([d3.min(industryData, d => d.rate), d3.max(industryData, d => d.rate)]);
+
                 // Draw bars
                 industryBarSvg.selectAll(".bar")
                     .data(industryData)
@@ -326,7 +332,7 @@
                     .attr("width", x.bandwidth())
                     .attr("y", d => y(d.value))
                     .attr("height", d => height - y(d.value))
-                    .attr("fill", "steelblue")
+                    .attr("fill", d => color(d.rate))
                     .on('mouseover', function (e, d) {
                         const element = d3.select(this);
                         element.style("opacity", 0.5);
@@ -351,6 +357,10 @@
                 // Add the y Axis
                 industryBarSvg.append("g")
                     .call(d3.axisLeft(y));
+            }
+
+            {// draw Wordcloud
+
             }
         });
 
