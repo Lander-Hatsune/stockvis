@@ -3,6 +3,8 @@ import os
 from glob import glob
 import json
 from tqdm import tqdm
+import jieba
+from stopwordsiso import stopwords
 
 klines = {}
 for path in tqdm(glob("data/klines/*.json")):
@@ -16,7 +18,7 @@ ind_dict = {}
 with open("data/industries.json") as f:
     ind_dict = {
         ind["encode"]: ind["name"] for ind in json.load(f)["data"]["industries"]}
-    
+
 inds = {}
 for path in glob("data/industries/*.json"):
     encode = os.path.splitext(os.path.split(path)[-1])[0]
@@ -44,6 +46,14 @@ for symbol, comp in tqdm(comps.items()):
         provinces[comp["provincial_name"]] = [symbol,]
     else:
         provinces[comp["provincial_name"]].append(symbol)
+
+stopwords = stopwords("cn")
+for k, comp in comps.items():
+    s = comp["operating_scope"] or "" + \
+        comp["main_operation_business"] or "" + \
+        comp["org_cn_introduction"] or ""
+    words = [w for w in jieba.lcut(s, HMM=True) if w not in stopwords]
+    comp["words"] = list(set(words))
 
 with open("data/list.json") as f:
     all_l = json.load(f)["data"]["list"]
