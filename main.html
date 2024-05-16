@@ -171,7 +171,7 @@
                     ...data,
                     klines: filteredKlines
                 };
-                console.log(filteredData);
+                console.log("filteredData:", filteredData);
 
                 updateMap(filteredData);
                 updateIndustryBar(filteredData);
@@ -304,6 +304,8 @@
                         return acc + val;
                     }, 0);
                     rate = list.reduce((acc, item) => {
+                        if (!data.klines[item].length)
+                            return acc;
                         val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
                         return acc + val;
                     }, 0);
@@ -326,7 +328,9 @@
                 const industryBarSvg = d3.select("#industryBar svg")
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height + margin.top + margin.bottom)
-                    .append("g")
+
+                industryBarSvg.selectAll("*").remove();
+                const g = industryBarSvg.append("g")
                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                 // Initialize tooltip
@@ -343,7 +347,7 @@
                     .domain([d3.min(industryData, d => d.rate), d3.max(industryData, d => d.rate)]);
 
                 // Draw bars
-                industryBarSvg.selectAll(".bar")
+                g.selectAll(".bar")
                     .data(industryData)
                     .enter().append("rect")
                     .attr("class", "bar")
@@ -369,12 +373,12 @@
                     });
 
                 // Add the x Axis
-                industryBarSvg.append("g")
+                g.append("g")
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(x));
 
                 // Add the y Axis
-                industryBarSvg.append("g")
+                g.append("g")
                     .call(d3.axisLeft(y));
             }
 
@@ -401,7 +405,7 @@
                 let wordData = Object.entries(wordDict).map(([word, vals]) => {
                     return {
                         text: word,
-                        size: vals.count / 100,
+                        size: Math.log(vals.amount),
                         value: vals.amount,
                     };
                 }).sort((a, b) => b.size - a.size).slice(0, 50);
@@ -425,10 +429,14 @@
                     const wordcloudSvg = d3.select("#wordcloud svg")
                         .attr("width", width)
                         .attr("height", height)
-                        .append("g")
+
+                    // Clear existing elements
+                    wordcloudSvg.selectAll("*").remove();
+
+                    const g = wordcloudSvg.append("g")
                         .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-                    wordcloudSvg.selectAll("text")
+                    g.selectAll("text")
                         .data(words)
                         .enter().append("text")
                         .style("font-size", d => d.size + "px")
