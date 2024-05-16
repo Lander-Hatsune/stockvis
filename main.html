@@ -402,16 +402,19 @@
                     })
                 });
 
+                const minAmount = d3.min(Object.entries(wordDict), ([word, vals]) => vals.amount);
+                const maxAmount = d3.max(Object.entries(wordDict), ([word, vals]) => vals.amount);
+                const amountLen = maxAmount - minAmount;
                 let wordData = Object.entries(wordDict).map(([word, vals]) => {
                     return {
                         text: word,
-                        size: Math.log(vals.amount),
-                        value: vals.amount,
+                        size: (vals.amount - minAmount) / amountLen * 80,
+                        value: Math.log(vals.amount),
                     };
                 }).sort((a, b) => b.size - a.size).slice(0, 50);
                 console.log("wordData:", wordData);
 
-                const colorScale = d3.scaleSequential(d3.interpolateBlues)
+                const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
                     .domain([d3.min(wordData, d => d.value), d3.max(wordData, d => d.value)]); // Assuming values are in range [0, 1]
 
                 const layout = d3.layout.cloud()
