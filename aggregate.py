@@ -45,9 +45,11 @@ for symbol, comp in tqdm(comps.items()):
         provinces[comp["provincial_name"]] = [symbol,]
     else:
         provinces[comp["provincial_name"]].append(symbol)
+del provinces[None]
 
 with open("stopwords.txt") as f:
     stopwords = set(f.read().split('\n'))
+
 
 for k, comp in tqdm(comps.items()):
     s = comp["operating_scope"] or "" + \
