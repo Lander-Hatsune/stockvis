@@ -73,20 +73,6 @@
         // Set the dimensions and margins of the graph
         const margin = { top: 20, right: 20, bottom: 20, left: 50 };
 
-        // Timeline placeholder
-        const timelineSvg = d3.select("#timeline svg");
-        timelineSvg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        // Map placeholder
-        const mapSvg = d3.select("#map svg");
-
-        // IndustryBar placeholder
-        const industryBarSvg = d3.select("#industryBar svg");
-
-        // Wordcloud placeholder
-        const wordcloudSvg = d3.select("#wordcloud svg");
-
         // Load data
         d3.json("data.json").then(data => {
             console.log("data:", data);
@@ -120,6 +106,8 @@
                 y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
 
                 // Add the valueline path
+                const timelineSvg = d3.select("#timeline svg")
+
                 timelineSvg.append("path")
                     .data([timelineData])
                     .attr("class", "line")
@@ -142,7 +130,7 @@
                 // Define a brush
                 const brush = d3.brushX()
                     .extent([[0, 0], [width, height]])
-                    .on("start brush end", brushed);
+                    .on("end", brushed);
 
                 // Append the brush to the SVG
                 const brushGroup = timelineSvg.append("g")
@@ -160,12 +148,38 @@
                         // Print selected time range
                         console.log("Selected time range:", startTime, endTime);
                         timeL = startTime, timeR = endTime
+
+                        updateAll(timeL, timeR);
                     } else {
                     }
                 }
+                updateAll(d3.min(timelineData, d => parseTime(d[0])),
+                    d3.max(timelineData, d => parseTime(d[0])));
             }
 
-            {// draw Map
+            function updateAll(timeL, timeR) {
+                const filteredKlines = {};
+                for (const [key, values] of Object.entries(data.klines)) {
+                    filteredKlines[key] = values.filter(d => {
+                        const date = d3.timeParse("%Q")(d[0]);
+                        return date >= timeL && date <= timeR;
+                    });
+                }
+
+                // Update the data object with filtered klines
+                const filteredData = {
+                    ...data,
+                    klines: filteredKlines
+                };
+                console.log(filteredData);
+
+                updateMap(filteredData);
+                updateIndustryBar(filteredData);
+                updateWordcloud(filteredData);
+            }
+
+
+            function updateMap(data) {
                 d3.json("china.json").then(ChinaGeoJson => {
                     // Set dimensions and margins for the map
                     const width = 800 - margin.left - margin.right;
@@ -187,7 +201,8 @@
                         );
                         value = Math.log(value);
                         return { fullname, value };
-                    })
+                    });
+                    console.log("mapData:", mapData);
 
                     // Create a color scale
                     const color = d3.scaleSequential(d3.interpolatePuBu) // RdYlGn, PiYG
@@ -197,6 +212,9 @@
                     const mapSvg = d3.select("#map svg")
                         .attr("width", width)
                         .attr("height", height);
+
+                    // Clear existing map paths
+                    mapSvg.selectAll("path").remove();
 
                     // Initialize tooltip
                     const tip = d3.tip()
@@ -237,6 +255,10 @@
                             tip.hide(e, d);
                         });
 
+
+                    // Clear existing legend
+                    mapSvg.selectAll(".legend").remove();
+
                     // Add a vertical legend using discrete steps
                     const legendHeight = 300;
                     const legendWidth = 20;
@@ -244,6 +266,7 @@
                     const stepHeight = legendHeight / steps;
 
                     const legendSvg = mapSvg.append("g")
+                        .attr("class", "legend")
                         .attr("transform", `translate(${width - legendWidth - 20}, ${height - legendHeight - 10})`);
 
                     // Create a color legend with discrete steps
@@ -270,7 +293,7 @@
                 });
             }
 
-            {// draw IndustryBar
+            function updateIndustryBar(data) {
                 // Set dimensions for the IndustryBar section
                 const width = 1800;
                 const height = 200;
@@ -287,6 +310,7 @@
                     value = value / 100000000;
                     return { name, value, rate };
                 }).sort((a, b) => b.value - a.value).slice(0, 30);
+                console.log("industryData:", industryData);
 
                 // Create scales for the x and y axes
                 const x = d3.scaleBand()
@@ -354,7 +378,7 @@
                     .call(d3.axisLeft(y));
             }
 
-            {// draw Wordcloud
+            function updateWordcloud(data) {
                 const width = 500;
                 const height = 500;
 
@@ -374,7 +398,6 @@
                     })
                 });
 
-                console.log(wordDict);
                 let wordData = Object.entries(wordDict).map(([word, vals]) => {
                     return {
                         text: word,
@@ -382,7 +405,7 @@
                         value: vals.amount,
                     };
                 }).sort((a, b) => b.size - a.size).slice(0, 50);
-                console.log(wordData);
+                console.log("wordData:", wordData);
 
                 const colorScale = d3.scaleSequential(d3.interpolateBlues)
                     .domain([d3.min(wordData, d => d.value), d3.max(wordData, d => d.value)]); // Assuming values are in range [0, 1]
