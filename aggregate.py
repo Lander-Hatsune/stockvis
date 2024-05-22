@@ -10,7 +10,7 @@ for path in tqdm(glob("data/klines/*.json")):
     with open(path) as f:
         kline = json.load(f)
     symbol = kline["data"]["symbol"]
-    kline_data = kline["data"]["item"][::10]
+    kline_data = kline["data"]["item"][::3]
     klines[symbol] = kline_data
 
 ind_dict = {}
