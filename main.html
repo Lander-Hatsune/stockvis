@@ -11,21 +11,45 @@
     <script src="d3.layout.cloud.js"></script>
     <link rel="stylesheet" href="d3-tip.css">
     <style>
-        /* Add CSS styles here */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .row {
+            display: flex;
+            width: 100%;
+            margin-top: 10px;
         }
 
         .section {
-            margin-bottom: 20px;
-            padding: 20px;
             border: 1px solid #ccc;
+            padding: 0;
+            margin-left: 10px;
         }
 
         #timeline {
-            /* Customize styles for timeline section */
+            flex: 1;
+            height: 10%;
+        }
+
+        #map {
+            flex: 1;
+            height: calc(70% - 10px);
+        }
+
+        #wordcloud {
+            flex: 1;
+            height: calc(70% - 10px);
+        }
+
+        #industryBar {
+            flex: 1;
+            height: 20%;
         }
 
         .brush .handle,
@@ -33,37 +57,31 @@
             fill: steelblue;
             stroke: none;
         }
-
-        #map {
-            /* Customize styles for map section */
-        }
-
-        #industryBar {
-            /* Customize styles for industry bar section */
-        }
-
-        #wordcloud {
-            /* Customize styles for wordcloud section */
-        }
     </style>
 </head>
 
 <body>
-    <div id="timeline" class="section">
-        <!-- Timeline section -->
-        <svg width="1920" height="100"></svg>
+    <div class="row">
+        <div id="timeline" class="section">
+            <!-- Timeline section -->
+            <svg></svg>
+        </div>
     </div>
-    <div id="map" class="section">
-        <!-- Map section -->
-        <svg width="800" height="800"></svg>
+    <div class="row">
+        <div id="map" class="section">
+            <!-- Map section -->
+            <svg></svg>
+        </div>
+        <div id="wordcloud" class="section">
+            <!-- Wordcloud section -->
+            <svg></svg>
+        </div>
     </div>
-    <div id="industryBar" class="section">
-        <!-- IndustryBar section -->
-        <svg width="500" height="200"></svg>
-    </div>
-    <div id="wordcloud" class="section">
-        <!-- Wordcloud section -->
-        <svg width="500" height="300"></svg>
+    <div class="row">
+        <div id="industryBar" class="section">
+            <!-- IndustryBar section -->
+            <svg></svg>
+        </div>
     </div>
 
     <script>
@@ -71,24 +89,28 @@
         // D3.js will be used to manipulate the DOM and draw the graphs
 
         // Set the dimensions and margins of the graph
-        const margin = { top: 20, right: 20, bottom: 20, left: 50 };
-
         // Load data
         d3.json("data.json").then(data => {
             console.log("data:", data);
 
-
             var timeL, timeR;
             { // draw timeline
-                const width = 1920 - margin.left - margin.right,
-                    height = 100 - margin.top - margin.bottom;
+                const margin = { top: 5, left: 5, bottom: 20, right: 5, };
+                const width = 1920, height = 100;
+                const innerWidth = width - margin.left - margin.right,
+                    innerHeight = height - margin.top - margin.bottom;
+
+                const timelineSvg = d3.select("#timeline svg")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("viewBox", `0 0 ${width} ${height}`);
 
                 const timelineData = data["klines"]["SH000001"];
                 console.log(timelineData);
 
                 // Set the ranges
-                const x = d3.scaleTime().range([0, width]);
-                const y = d3.scaleLinear().range([height, 0]);
+                const x = d3.scaleTime().range([0, innerWidth]);
+                const y = d3.scaleLinear().range([innerHeight, 0]);
 
                 // Parse the timestamp strings into Date objects
                 const parseTime = d3.timeParse("%Q");
@@ -105,9 +127,6 @@
                 );
                 y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
 
-                // Add the valueline path
-                const timelineSvg = d3.select("#timeline svg")
-
                 timelineSvg.append("path")
                     .data([timelineData])
                     .attr("class", "line")
@@ -118,7 +137,7 @@
 
                 // Add the X Axis
                 timelineSvg.append("g")
-                    .attr("transform", "translate(0," + height + ")")
+                    .attr("transform", "translate(0," + innerHeight + ")")
                     .call(d3.axisBottom(x).ticks(d3.timeYear))
                     .selectAll("text")
                     .attr("y", 0)
@@ -129,7 +148,7 @@
 
                 // Define a brush
                 const brush = d3.brushX()
-                    .extent([[0, 0], [width, height]])
+                    .extent([[0, 0], [innerWidth, innerHeight]])
                     .on("end", brushed);
 
                 // Append the brush to the SVG
@@ -182,12 +201,20 @@
             function updateMap(data) {
                 d3.json("china.json").then(ChinaGeoJson => {
                     // Set dimensions and margins for the map
-                    const width = 800 - margin.left - margin.right;
-                    const height = 500 - margin.top - margin.bottom;
+                    const margin = { top: 5, left: 5, bottom: 5, right: 5, };
+                    const width = 500, height = 500;
+                    const innerWidth = width - margin.left - margin.right,
+                        innerHeight = height - margin.top - margin.bottom;
+
+                    // Append the SVG for the map
+                    const mapSvg = d3.select("#map svg")
+                        .attr("width", "100%")
+                        .attr("height", "100%")
+                        .attr("viewBox", `0 0 ${width} ${height}`);
 
                     // Create a projection and path generator
                     const projection = d3.geoMercator()
-                        .fitSize([width, height], ChinaGeoJson);
+                        .fitSize([innerWidth, innerHeight], ChinaGeoJson);
 
                     const path = d3.geoPath().projection(projection);
 
@@ -207,11 +234,6 @@
                     // Create a color scale
                     const color = d3.scaleSequential(d3.interpolatePuBu) // RdYlGn, PiYG
                         .domain([d3.min(mapData, d => d.value), d3.max(mapData, d => d.value)]);
-
-                    // Append the SVG for the map
-                    const mapSvg = d3.select("#map svg")
-                        .attr("width", width)
-                        .attr("height", height);
 
                     // Clear existing map paths
                     mapSvg.selectAll("path").remove();
@@ -293,98 +315,17 @@
                 });
             }
 
-            function updateIndustryBar(data) {
-                // Set dimensions for the IndustryBar section
-                const width = 1800;
-                const height = 200;
-
-                const industryData = Object.entries(data.industries).map(([name, list]) => {
-                    value = list.reduce((acc, item) => {
-                        val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
-                        return acc + val;
-                    }, 0);
-                    rate = list.reduce((acc, item) => {
-                        if (!data.klines[item].length)
-                            return acc;
-                        val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
-                        return acc + val;
-                    }, 0);
-                    value = value / 100000000;
-                    return { name, value, rate };
-                }).sort((a, b) => b.value - a.value).slice(0, 30);
-                console.log("industryData:", industryData);
-
-                // Create scales for the x and y axes
-                const x = d3.scaleBand()
-                    .range([0, width])
-                    .padding(0.1)
-                    .domain(industryData.map(d => d.name));
-
-                const y = d3.scaleLinear()
-                    .range([height, 0])
-                    .domain([0, d3.max(industryData, d => d.value)]);
-
-                // Append SVG for the IndustryBar section
-                const industryBarSvg = d3.select("#industryBar svg")
-                    .attr("width", width + margin.left + margin.right)
-                    .attr("height", height + margin.top + margin.bottom)
-
-                industryBarSvg.selectAll("*").remove();
-                const g = industryBarSvg.append("g")
-                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-                // Initialize tooltip
-                const tip = d3.tip()
-                    .attr('class', 'd3-tip')
-                    .html((e, d) => {
-                        return `<strong>Industry:</strong> <span>${d.name}</span><br>
-                    <strong>Value:</strong> <span>${d.value}</span>`;
-                    });
-
-                industryBarSvg.call(tip);
-
-                const color = d3.scaleSequential(d3.interpolateRdYlGn) // RdYlGn, PiYG
-                    .domain([d3.min(industryData, d => d.rate), d3.max(industryData, d => d.rate)]);
-
-                // Draw bars
-                g.selectAll(".bar")
-                    .data(industryData)
-                    .enter().append("rect")
-                    .attr("class", "bar")
-                    .attr("x", d => x(d.name))
-                    .attr("width", x.bandwidth())
-                    .attr("y", d => y(d.value))
-                    .attr("height", d => height - y(d.value))
-                    .attr("fill", d => color(d.rate))
-                    .on('mouseover', function (e, d) {
-                        const element = d3.select(this);
-                        element.style("opacity", 0.5);
-                        tip.show(e, d);
-                    })
-                    .on("mousemove", function (e, d) {
-                        const tipNode = document.querySelector('.d3-tip');
-                        tipNode.style.left = (e.pageX - tipNode.clientWidth / 2) + 'px';
-                        tipNode.style.top = (e.pageY - tipNode.offsetHeight - 15) + 'px';
-                    })
-                    .on('mouseout', function (e, d) {
-                        const element = d3.select(this);
-                        element.style("opacity", 1)
-                        tip.hide(e, d);
-                    });
-
-                // Add the x Axis
-                g.append("g")
-                    .attr("transform", "translate(0," + height + ")")
-                    .call(d3.axisBottom(x));
-
-                // Add the y Axis
-                g.append("g")
-                    .call(d3.axisLeft(y));
-            }
-
             function updateWordcloud(data) {
-                const width = 500;
-                const height = 500;
+                const margin = { top: 20, left: 20, bottom: 20, right: 20, };
+                const width = 500, height = 500;
+
+                const wordcloudSvg = d3.select("#wordcloud svg")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("viewBox", `0 0 ${width} ${height}`);
+
+                const innerWidth = width - margin.left - margin.right,
+                    innerHeight = height - margin.top - margin.bottom;
 
                 const wordDict = {};
                 Object.entries(data.companies).forEach(([symbol, comp]) => {
@@ -408,17 +349,17 @@
                 let wordData = Object.entries(wordDict).map(([word, vals]) => {
                     return {
                         text: word,
-                        size: (vals.amount - minAmount) / amountLen * 80,
+                        size: (vals.amount - minAmount) / amountLen * 40,
                         value: Math.log(vals.amount),
                     };
-                }).sort((a, b) => b.size - a.size).slice(0, 50);
+                }).sort((a, b) => b.size - a.size).slice(0, 100);
                 console.log("wordData:", wordData);
 
                 const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
                     .domain([d3.min(wordData, d => d.value), d3.max(wordData, d => d.value)]); // Assuming values are in range [0, 1]
 
                 const layout = d3.layout.cloud()
-                    .size([width, height])
+                    .size([innerWidth, innerHeight])
                     .words(wordData)
                     .padding(5)
                     .rotate(0)
@@ -429,10 +370,6 @@
                 layout.start();
 
                 function draw(words) {
-                    const wordcloudSvg = d3.select("#wordcloud svg")
-                        .attr("width", width)
-                        .attr("height", height)
-
                     // Clear existing elements
                     wordcloudSvg.selectAll("*").remove();
 
@@ -449,6 +386,99 @@
                         .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
                         .text(d => d.text);
                 }
+            }
+
+            function updateIndustryBar(data) {
+                // Set dimensions for the IndustryBar section
+                const margin = { top: 20, left: 50, bottom: 20, right: 20, };
+                const width = 1920, height = 200;
+
+                const industryBarSvg = d3.select("#industryBar svg")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("viewBox", `0 0 ${width} ${height}`);
+
+                const innerWidth = width - margin.left - margin.right;
+                const innerHeight = height - margin.top - margin.bottom;
+
+                const industryData = Object.entries(data.industries).map(([name, list]) => {
+                    value = list.reduce((acc, item) => {
+                        val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
+                        return acc + val;
+                    }, 0);
+                    rate = list.reduce((acc, item) => {
+                        if (!data.klines[item].length)
+                            return acc;
+                        val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
+                        return acc - val;
+                    }, 0);
+                    value = value / 100000000;
+                    return { name, value, rate };
+                }).sort((a, b) => b.rate - a.rate).toSpliced(20, 134 - 40);
+                console.log("industryData:", industryData);
+
+                // Create scales for the x and y axes
+                const x = d3.scaleBand()
+                    .range([0, innerWidth])
+                    .padding(0.1)
+                    .domain(industryData.map(d => d.name));
+
+                const y = d3.scaleLinear()
+                    .range([innerHeight, 0])
+                    .domain([0, d3.max(industryData, d => d.value)]);
+
+                industryBarSvg.selectAll("*").remove();
+                const g = industryBarSvg.append("g")
+                    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+                // Initialize tooltip
+                const tip = d3.tip()
+                    .attr('class', 'd3-tip')
+                    .html((e, d) => {
+                        return `<strong>Industry:</strong> <span>${d.name}</span><br>
+                    <strong>Value:</strong> <span>${d.value}</span><br>
+                    <strong>Rate:</strong> <span>${d.rate}</span>`;
+                    });
+
+                industryBarSvg.call(tip);
+
+                const color = d3.scaleSequential(d3.interpolateRdYlGn) // RdYlGn, PiYG
+                    .domain([d3.min(industryData, d => d.rate), d3.max(industryData, d => d.rate)]);
+
+                // Draw bars
+                g.selectAll(".bar")
+                    .data(industryData)
+                    .enter().append("rect")
+                    .attr("class", "bar")
+                    .attr("x", d => x(d.name))
+                    .attr("width", x.bandwidth())
+                    .attr("y", d => y(d.value))
+                    .attr("height", d => innerHeight - y(d.value))
+                    .attr("fill", d => color(d.rate))
+                    .on('mouseover', function (e, d) {
+                        const element = d3.select(this);
+                        element.style("opacity", 0.5);
+                        tip.show(e, d);
+                    })
+                    .on("mousemove", function (e, d) {
+                        const tipNode = document.querySelector('.d3-tip');
+                        tipNode.style.left = (e.pageX - tipNode.clientWidth / 2) + 'px';
+                        tipNode.style.top = (e.pageY - tipNode.offsetHeight - 15) + 'px';
+                    })
+                    .on('mouseout', function (e, d) {
+                        const element = d3.select(this);
+                        element.style("opacity", 1)
+                        tip.hide(e, d);
+                    });
+
+                // Add the x Axis
+                g.append("g")
+                    .attr("transform", `translate(0, ${innerHeight})`)
+                    .call(d3.axisBottom(x));
+
+                // Add the y Axis
+                g.append("g")
+                    .call(d3.axisLeft(y));
             }
         });
 
