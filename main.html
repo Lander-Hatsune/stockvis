@@ -275,8 +275,28 @@
                             const element = d3.select(this);
                             element.style("opacity", 1)
                             tip.hide(e, d);
-                        });
+                        })
+                        .on("click", function (e, d) {
+                            const element = d3.select(this);
+                            const province = mapData.find(p => p.fullname === d.properties.fullname);
+                            if (province) {
+                                console.log("Selected Province:", province);
+                                const filteredKlines = {};
+                                for (const symbol of data.provinces[province.fullname]) {
+                                    filteredKlines[symbol] = data.klines[symbol];
+                                }
 
+                                // Update the data object with filtered klines
+                                const filteredData = {
+                                    ...data,
+                                    klines: filteredKlines
+                                };
+                                console.log("2nd filteredData:", filteredData);
+
+                                updateIndustryBar(filteredData);
+                                updateWordcloud(filteredData);
+                            }
+                        })
 
                     // Clear existing legend
                     mapSvg.selectAll(".legend").remove();
@@ -329,6 +349,7 @@
 
                 const wordDict = {};
                 Object.entries(data.companies).forEach(([symbol, comp]) => {
+                    if (!(symbol in data.klines)) return;
                     amount = data.klines[symbol].reduce((acc, k) => acc + k[9], 0);
                     comp.words.forEach(word => {
                         if (wordDict[word]) {
@@ -403,10 +424,14 @@
 
                 const industryData = Object.entries(data.industries).map(([name, list]) => {
                     value = list.reduce((acc, item) => {
+                        if (!(item in data.klines))
+                            return acc;
                         val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
                         return acc + val;
                     }, 0);
                     rate = list.reduce((acc, item) => {
+                        if (!(item in data.klines))
+                            return acc;
                         if (!data.klines[item].length)
                             return acc;
                         val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
