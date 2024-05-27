@@ -169,6 +169,8 @@
                         timeL = startTime, timeR = endTime
 
                         updateAll(timeL, timeR);
+                        mapFilter = null;
+                        indFilter = null;
                     } else {
                     }
                 }
@@ -197,6 +199,32 @@
                 updateWordcloud(filteredData);
             }
 
+            let mapFilter = null;
+            function applyMapFilter(provName, data) {
+                if (indFilter !== null)
+                    clearIndFilter(data);
+                console.log("mapFilter:", provName);
+                mapFilter = provName;
+                const filteredKlines = {};
+                for (const symbol of data.provinces[provName]) {
+                    filteredKlines[symbol] = data.klines[symbol];
+                }
+                const filteredData = {
+                    ...data,
+                    klines: filteredKlines
+                };
+                console.log("map filteredData:", filteredData);
+
+                updateIndustryBar(filteredData);
+                updateWordcloud(filteredData);
+            }
+            function clearMapFilter(data) {
+                console.log("mapFilter clear");
+                mapFilter = null;
+                updateIndustryBar(data);
+                updateWordcloud(data);
+                console.log("mapFilter cleared data:", data);
+            }
 
             function updateMap(data) {
                 d3.json("china.json").then(ChinaGeoJson => {
@@ -221,10 +249,14 @@
                     const mapData = Object.entries(data.provinces).map(([fullname, list]) => {
                         value = list.reduce(
                             (acc, item) => {
+                                if (!(item in data.klines))
+                                    return acc;
+                                if (!data.klines[item].length)
+                                    return acc;
                                 val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
                                 return acc + val;
                             },
-                            0
+                            1,
                         );
                         value = Math.log(value);
                         return { fullname, value };
@@ -278,45 +310,21 @@
                         })
                         .on("click", function (e, d) {
                             const province = mapData.find(p => p.fullname === d.properties.fullname);
-                            if (province.fullname != provFilter) {
-                                applyFilter(province.fullname);
+                            if (province.fullname != mapFilter) {
+                                applyMapFilter(province.fullname, data);
                             } else {
-                                clearFilter();
+                                clearMapFilter(data);
                             }
                         })
 
-                    let provFilter = null;
-                    function applyFilter(provName) {
-                        console.log("2nd filter:", provName);
-                        provFilter = provName;
-                        const filteredKlines = {};
-                        for (const symbol of data.provinces[provName]) {
-                            filteredKlines[symbol] = data.klines[symbol];
-                        }
-                        const filteredData = {
-                            ...data,
-                            klines: filteredKlines
-                        };
-                        console.log("2nd filteredData:", filteredData);
-
-                        updateIndustryBar(filteredData);
-                        updateWordcloud(filteredData);
-                    }
-                    function clearFilter() {
-                        console.log("2nd filter clear");
-                        provFilter = null;
-                        updateIndustryBar(data);
-                        updateWordcloud(data);
-                    }
-
                     d3.select("body").on("keydown", function (e) {
                         if (e.key === "Escape") {
-                            clearFilter();
+                            clearMapFilter();
                         }
                     });
                     mapSvg.on('click', function (e) {
                         if (e.target.tagName === 'svg') {
-                            clearFilter();
+                            clearMapFilter();
                         }
                     });
 
@@ -371,7 +379,10 @@
 
                 const wordDict = {};
                 Object.entries(data.companies).forEach(([symbol, comp]) => {
-                    if (!(symbol in data.klines)) return;
+                    if (!(symbol in data.klines))
+                        return;
+                    if (!data.klines[symbol].length)
+                        return;
                     amount = data.klines[symbol].reduce((acc, k) => acc + k[9], 0);
                     comp.words.forEach(word => {
                         if (wordDict[word]) {
@@ -431,6 +442,33 @@
                 }
             }
 
+            let indFilter = null;
+            function applyIndFilter(indName, data) {
+                if (mapFilter !== null)
+                    clearMapFilter(data);
+                console.log("indFilter:", indName);
+                indFilter = indName;
+                const filteredKlines = {};
+                for (const symbol of data.industries[indName]) {
+                    filteredKlines[symbol] = data.klines[symbol];
+                }
+                const filteredData = {
+                    ...data,
+                    klines: filteredKlines
+                };
+                console.log("ind filteredData:", filteredData);
+
+                updateMap(filteredData);
+                updateWordcloud(filteredData);
+            }
+            function clearIndFilter(data) {
+                console.log("indFilter clear");
+                indFilter = null;
+                updateMap(data);
+                updateWordcloud(data);
+                console.log("indFilter cleared data:", data);
+            }
+
             function updateIndustryBar(data) {
                 // Set dimensions for the IndustryBar section
                 const margin = { top: 20, left: 50, bottom: 20, right: 20, };
@@ -447,6 +485,8 @@
                 const industryData = Object.entries(data.industries).map(([name, list]) => {
                     value = list.reduce((acc, item) => {
                         if (!(item in data.klines))
+                            return acc;
+                        if (!data.klines[item].length)
                             return acc;
                         val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
                         return acc + val;
@@ -516,7 +556,26 @@
                         const element = d3.select(this);
                         element.style("opacity", 1)
                         tip.hide(e, d);
-                    });
+                    })
+                    .on("click", function (e, d) {
+                        console.log(d);
+                        if (d.name != indFilter) {
+                            applyIndFilter(d.name, data);
+                        } else {
+                            clearIndFilter(data);
+                        }
+                    })
+
+                d3.select("body").on("keydown", function (e) {
+                    if (e.key === "Escape") {
+                        clearIndFilter();
+                    }
+                });
+                industryBarSvg.on('click', function (e) {
+                    if (e.target.tagName === 'svg') {
+                        clearIndFilter();
+                    }
+                });
 
                 // Add the x Axis
                 g.append("g")
