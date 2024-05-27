@@ -94,90 +94,89 @@
             console.log("data:", data);
 
             var timeL, timeR;
-            { // draw timeline
-                const margin = { top: 5, left: 5, bottom: 20, right: 5, };
-                const width = 1920, height = 100;
-                const innerWidth = width - margin.left - margin.right,
-                    innerHeight = height - margin.top - margin.bottom;
+            const margin = { top: 5, left: 5, bottom: 20, right: 5, };
+            const width = 1920, height = 100;
+            const innerWidth = width - margin.left - margin.right,
+                innerHeight = height - margin.top - margin.bottom;
 
-                const timelineSvg = d3.select("#timeline svg")
-                    .attr("width", "100%")
-                    .attr("height", "100%")
-                    .attr("viewBox", `0 0 ${width} ${height}`);
+            const timelineSvg = d3.select("#timeline svg")
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .attr("viewBox", `0 0 ${width} ${height}`);
 
-                const timelineData = data["klines"]["SH000001"];
-                console.log(timelineData);
+            const timelineData = data["klines"]["SH000001"];
+            console.log(timelineData);
 
-                // Set the ranges
-                const x = d3.scaleTime().range([0, innerWidth]);
-                const y = d3.scaleLinear().range([innerHeight, 0]);
+            // Set the ranges
+            const x = d3.scaleTime().range([0, innerWidth]);
+            const y = d3.scaleLinear().range([innerHeight, 0]);
 
-                // Parse the timestamp strings into Date objects
-                const parseTime = d3.timeParse("%Q");
+            // Parse the timestamp strings into Date objects
+            const parseTime = d3.timeParse("%Q");
 
-                // Define the line
-                const valueline = d3.line()
-                    .x(d => x(d[0]))
-                    .y(d => y(d[5]));
+            // Define the line
+            const valueline = d3.line()
+                .x(d => x(d[0]))
+                .y(d => y(d[5]));
 
-                // Scale the range of the data with padding
-                x.domain(
-                    [d3.min(timelineData, d => parseTime(d[0])),
-                    d3.max(timelineData, d => parseTime(d[0]))]
-                );
-                y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
+            // Scale the range of the data with padding
+            x.domain(
+                [d3.min(timelineData, d => parseTime(d[0])),
+                d3.max(timelineData, d => parseTime(d[0]))]
+            );
+            y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
 
-                timelineSvg.append("path")
-                    .data([timelineData])
-                    .attr("class", "line")
-                    .attr("d", valueline)
-                    .style("fill", "none") // Remove area fill
-                    .style("stroke", "steelblue") // Set line color
-                    .style("stroke-width", 2); // Set line width
+            timelineSvg.append("path")
+                .data([timelineData])
+                .attr("class", "line")
+                .attr("d", valueline)
+                .style("fill", "none") // Remove area fill
+                .style("stroke", "steelblue") // Set line color
+                .style("stroke-width", 2); // Set line width
 
-                // Add the X Axis
-                timelineSvg.append("g")
-                    .attr("transform", "translate(0," + innerHeight + ")")
-                    .call(d3.axisBottom(x).ticks(d3.timeYear))
-                    .selectAll("text")
-                    .attr("y", 0)
-                    .attr("x", 9)
-                    .attr("dy", ".35em")
-                    .attr("transform", "rotate(45)")
-                    .style("text-anchor", "start");
+            // Add the X Axis
+            timelineSvg.append("g")
+                .attr("transform", "translate(0," + innerHeight + ")")
+                .call(d3.axisBottom(x).ticks(d3.timeYear))
+                .selectAll("text")
+                .attr("y", 0)
+                .attr("x", 9)
+                .attr("dy", ".35em")
+                .attr("transform", "rotate(45)")
+                .style("text-anchor", "start");
 
-                // Define a brush
-                const brush = d3.brushX()
-                    .extent([[0, 0], [innerWidth, innerHeight]])
-                    .on("end", brushed);
+            // Define a brush
+            const brush = d3.brushX()
+                .extent([[0, 0], [innerWidth, innerHeight]])
+                .on("end", brushed);
 
-                // Append the brush to the SVG
-                const brushGroup = timelineSvg.append("g")
-                    .attr("class", "brush")
-                    .call(brush);
+            // Append the brush to the SVG
+            const brushGroup = timelineSvg.append("g")
+                .attr("class", "brush")
+                .call(brush);
 
-                // Function to handle brush events
-                function brushed(e) {
-                    const selection = e.selection;
-                    if (selection) {
-                        // Get the selected time range
-                        const startTime = x.invert(selection[0]);
-                        const endTime = x.invert(selection[1]);
+            // Function to handle brush events
+            function brushed(e) {
+                const selection = e.selection;
+                if (selection) {
+                    // Get the selected time range
+                    const startTime = x.invert(selection[0]);
+                    const endTime = x.invert(selection[1]);
 
-                        // Print selected time range
-                        console.log("Selected time range:", startTime, endTime);
-                        timeL = startTime, timeR = endTime
+                    // Print selected time range
+                    console.log("Selected time range:", startTime, endTime);
+                    timeL = startTime, timeR = endTime
 
-                        updateAll(timeL, timeR);
-                        mapFilter = null;
-                        indFilter = null;
-                    } else {
-                    }
+                    updateAll(timeL, timeR);
+                    mapFilter = null;
+                    indFilter = null;
+                } else {
                 }
-                updateAll(d3.min(timelineData, d => parseTime(d[0])),
-                    d3.max(timelineData, d => parseTime(d[0])));
             }
+            updateAll(d3.min(timelineData, d => parseTime(d[0])),
+                d3.max(timelineData, d => parseTime(d[0])));
 
+            var timeFiltData = data;
             function updateAll(timeL, timeR) {
                 const filteredKlines = {};
                 for (const [key, values] of Object.entries(data.klines)) {
@@ -193,6 +192,7 @@
                     klines: filteredKlines
                 };
                 console.log("filteredData:", filteredData);
+                timeFiltData = filteredData;
 
                 updateMap(filteredData);
                 updateIndustryBar(filteredData);
@@ -200,30 +200,27 @@
             }
 
             let mapFilter = null;
-            function applyMapFilter(provName, data) {
+            function applyMapFilter(provName) {
                 if (indFilter !== null)
-                    clearIndFilter(data);
-                console.log("mapFilter:", provName);
+                    clearIndFilter();
                 mapFilter = provName;
                 const filteredKlines = {};
-                for (const symbol of data.provinces[provName]) {
-                    filteredKlines[symbol] = data.klines[symbol];
+                for (const symbol of timeFiltData.provinces[provName]) {
+                    filteredKlines[symbol] = timeFiltData.klines[symbol];
                 }
                 const filteredData = {
                     ...data,
                     klines: filteredKlines
                 };
-                console.log("map filteredData:", filteredData);
-
+                console.log("map filter:", mapFilter, timeFiltData, filteredData);
                 updateIndustryBar(filteredData);
                 updateWordcloud(filteredData);
             }
-            function clearMapFilter(data) {
-                console.log("mapFilter clear");
+            function clearMapFilter() {
                 mapFilter = null;
-                updateIndustryBar(data);
-                updateWordcloud(data);
-                console.log("mapFilter cleared data:", data);
+                console.log("map filter clear:", timeFiltData);
+                updateIndustryBar(timeFiltData);
+                updateWordcloud(timeFiltData);
             }
 
             function updateMap(data) {
@@ -311,9 +308,9 @@
                         .on("click", function (e, d) {
                             const province = mapData.find(p => p.fullname === d.properties.fullname);
                             if (province.fullname != mapFilter) {
-                                applyMapFilter(province.fullname, data);
+                                applyMapFilter(province.fullname);
                             } else {
-                                clearMapFilter(data);
+                                clearMapFilter();
                             }
                         })
 
@@ -443,30 +440,28 @@
             }
 
             let indFilter = null;
-            function applyIndFilter(indName, data) {
+            function applyIndFilter(indName) {
                 if (mapFilter !== null)
-                    clearMapFilter(data);
-                console.log("indFilter:", indName);
+                    clearMapFilter();
                 indFilter = indName;
                 const filteredKlines = {};
-                for (const symbol of data.industries[indName]) {
-                    filteredKlines[symbol] = data.klines[symbol];
+                for (const symbol of timeFiltData.industries[indName]) {
+                    filteredKlines[symbol] = timeFiltData.klines[symbol];
                 }
                 const filteredData = {
-                    ...data,
+                    ...timeFiltData,
                     klines: filteredKlines
                 };
-                console.log("ind filteredData:", filteredData);
+                console.log("ind filter:", indFilter, timeFiltData, filteredData);
 
                 updateMap(filteredData);
                 updateWordcloud(filteredData);
             }
-            function clearIndFilter(data) {
-                console.log("indFilter clear");
+            function clearIndFilter() {
                 indFilter = null;
-                updateMap(data);
-                updateWordcloud(data);
-                console.log("indFilter cleared data:", data);
+                console.log("ind filter clear:", timeFiltData);
+                updateMap(timeFiltData);
+                updateWordcloud(timeFiltData);
             }
 
             function updateIndustryBar(data) {
@@ -560,9 +555,9 @@
                     .on("click", function (e, d) {
                         console.log(d);
                         if (d.name != indFilter) {
-                            applyIndFilter(d.name, data);
+                            applyIndFilter(d.name);
                         } else {
-                            clearIndFilter(data);
+                            clearIndFilter();
                         }
                     })
 
