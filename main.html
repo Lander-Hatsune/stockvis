@@ -277,26 +277,48 @@
                             tip.hide(e, d);
                         })
                         .on("click", function (e, d) {
-                            const element = d3.select(this);
                             const province = mapData.find(p => p.fullname === d.properties.fullname);
-                            if (province) {
-                                console.log("Selected Province:", province);
-                                const filteredKlines = {};
-                                for (const symbol of data.provinces[province.fullname]) {
-                                    filteredKlines[symbol] = data.klines[symbol];
-                                }
-
-                                // Update the data object with filtered klines
-                                const filteredData = {
-                                    ...data,
-                                    klines: filteredKlines
-                                };
-                                console.log("2nd filteredData:", filteredData);
-
-                                updateIndustryBar(filteredData);
-                                updateWordcloud(filteredData);
+                            if (province.fullname != provFilter) {
+                                applyFilter(province.fullname);
+                            } else {
+                                clearFilter();
                             }
                         })
+
+                    let provFilter = null;
+                    function applyFilter(provName) {
+                        console.log("2nd filter:", provName);
+                        provFilter = provName;
+                        const filteredKlines = {};
+                        for (const symbol of data.provinces[provName]) {
+                            filteredKlines[symbol] = data.klines[symbol];
+                        }
+                        const filteredData = {
+                            ...data,
+                            klines: filteredKlines
+                        };
+                        console.log("2nd filteredData:", filteredData);
+
+                        updateIndustryBar(filteredData);
+                        updateWordcloud(filteredData);
+                    }
+                    function clearFilter() {
+                        console.log("2nd filter clear");
+                        provFilter = null;
+                        updateIndustryBar(data);
+                        updateWordcloud(data);
+                    }
+
+                    d3.select("body").on("keydown", function (e) {
+                        if (e.key === "Escape") {
+                            clearFilter();
+                        }
+                    });
+                    mapSvg.on('click', function (e) {
+                        if (e.target.tagName === 'svg') {
+                            clearFilter();
+                        }
+                    });
 
                     // Clear existing legend
                     mapSvg.selectAll(".legend").remove();
