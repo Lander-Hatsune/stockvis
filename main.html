@@ -400,37 +400,37 @@
                     // Clear existing legend
                     mapSvg.selectAll(".legend").remove();
 
-                    // Add a vertical legend using discrete steps
-                    const legendHeight = 300;
-                    const legendWidth = 20;
-                    const steps = 50; // Number of steps for the legend
-                    const stepHeight = legendHeight / steps;
+                    // // Add a vertical legend using discrete steps
+                    // const legendHeight = 300;
+                    // const legendWidth = 20;
+                    // const steps = 50; // Number of steps for the legend
+                    // const stepHeight = legendHeight / steps;
 
-                    const legendSvg = mapSvg.append("g")
-                        .attr("class", "legend")
-                        .attr("transform", `translate(${width - legendWidth - 20}, ${height - legendHeight - 10})`);
+                    // const legendSvg = mapSvg.append("g")
+                    //     .attr("class", "legend")
+                    //     .attr("transform", `translate(${width - legendWidth - 20}, ${height - legendHeight - 10})`);
 
-                    // Create a color legend with discrete steps
-                    const legendScale = d3.scaleLinear()
-                        .domain([d3.min(mapData, d => d.value), d3.max(mapData, d => d.value)])
-                        .range([legendHeight, 0]);
+                    // // Create a color legend with discrete steps
+                    // const legendScale = d3.scaleLog()
+                    //     .domain([mapDataValueMin, mapDataValueMax])
+                    //     .range([legendHeight, 0]);
 
-                    d3.range(steps).forEach(i => {
-                        const value = legendScale.invert(i * stepHeight);
-                        legendSvg.append("rect")
-                            .attr("x", 0)
-                            .attr("y", i * stepHeight)
-                            .attr("width", legendWidth)
-                            .attr("height", stepHeight)
-                            .attr("fill", color(value));
-                    });
+                    // d3.range(steps).forEach(i => {
+                    //     const value = legendScale.invert(i * stepHeight);
+                    //     legendSvg.append("rect")
+                    //         .attr("x", 0)
+                    //         .attr("y", i * stepHeight)
+                    //         .attr("width", legendWidth)
+                    //         .attr("height", stepHeight)
+                    //         .attr("fill", color(value));
+                    // });
 
-                    const legendAxis = d3.axisRight(legendScale)
-                        .ticks(10);
+                    // const legendAxis = d3.axisRight(legendScale)
+                    //     .ticks(10);
 
-                    legendSvg.append("g")
-                        .attr("transform", `translate(${legendWidth}, 0)`)
-                        .call(legendAxis);
+                    // legendSvg.append("g")
+                    //     .attr("transform", `translate(${legendWidth}, 0)`)
+                    //     .call(legendAxis);
                 });
             }
 
