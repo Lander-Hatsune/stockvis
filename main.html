@@ -564,7 +564,7 @@
                 const innerWidth = width - margin.left - margin.right;
                 const innerHeight = height - margin.top - margin.bottom;
 
-                const industryData = Object.entries(data.industries).map(([name, list]) => {
+                const industryDataFull = Object.entries(data.industries).map(([name, list]) => {
                     value = list.reduce((acc, item) => {
                         if (!(item in data.klines))
                             return acc;
@@ -581,10 +581,12 @@
                         val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
                         return acc - val;
                     }, 0);
-                    value = value / 100000000;
+                    value = value / (list.length + 1) / 1e8;
+                    rate = rate / (list.length + 1);
                     return { name, value, rate };
-                }).sort((a, b) => b.rate - a.rate).toSpliced(20, 134 - 40);
-                console.log("industryData:", industryData);
+                }).sort((a, b) => b.rate - a.rate);
+                console.log("industryDataFull:", industryDataFull);
+                const industryData = industryDataFull.toSpliced(20, 134 - 40);
 
                 // Create scales for the x and y axes
                 const x = d3.scaleBand()
@@ -617,37 +619,58 @@
                 // Draw bars
                 g.selectAll(".bar")
                     .data(industryData)
-                    .enter().append("rect")
-                    .attr("class", "bar")
-                    .attr("x", d => x(d.name))
-                    .attr("width", x.bandwidth())
-                    .attr("y", d => y(d.value))
-                    .attr("height", d => innerHeight - y(d.value))
-                    .attr("fill", d => color(d.rate))
-                    .on('mouseover', function (e, d) {
-                        const element = d3.select(this);
-                        element.style("opacity", 0.5);
-                        tip.show(e, d);
-                    })
-                    .on("mousemove", function (e, d) {
-                        const tipNode = document.querySelector('.d3-tip');
-                        tipNode.style.left = (e.pageX - tipNode.clientWidth / 2) + 'px';
-                        tipNode.style.top = (e.pageY - tipNode.offsetHeight - 15) + 'px';
-                    })
-                    .on('mouseout', function (e, d) {
-                        const element = d3.select(this);
-                        element.style("opacity", 1)
-                        tip.hide(e, d);
-                    })
-                    .on("click", function (e, d) {
-                        console.log(d);
-                        if (d.name != indFilter) {
-                            applyIndFilter(d.name);
-                        } else {
-                            clearIndFilter();
-                        }
-                    })
-
+                    .join(
+                        enter => enter.append("rect")
+                            .attr("class", "bar")
+                            .attr("x", d => x(d.name))
+                            .attr("width", x.bandwidth())
+                            .attr("y", innerHeight) // Start at the bottom
+                            .attr("height", 0) // Start with height 0
+                            .attr("fill", d => color(d.rate))
+                            .on('mouseover', function (e, d) {
+                                const element = d3.select(this);
+                                element.style("opacity", 0.5);
+                                tip.show(e, d);
+                            })
+                            .on("mousemove", function (e, d) {
+                                const tipNode = document.querySelector('.d3-tip');
+                                tipNode.style.left = (e.pageX - tipNode.clientWidth / 2) + 'px';
+                                tipNode.style.top = (e.pageY - tipNode.offsetHeight - 15) + 'px';
+                            })
+                            .on('mouseout', function (e, d) {
+                                const element = d3.select(this);
+                                element.style("opacity", 1)
+                                tip.hide(e, d);
+                            })
+                            .on("click", function (e, d) {
+                                console.log(d);
+                                if (d.name != indFilter) {
+                                    applyIndFilter(d.name);
+                                    const element = d3.select(this);
+                                    element.style("stroke", "orange").style("stroke-width", 5);
+                                } else {
+                                    clearIndFilter();
+                                    const element = d3.select(this);
+                                    element.style("stroke-width", 0);
+                                }
+                            })
+                            .transition()
+                            .duration(1000)
+                            .attr("y", d => y(d.value))
+                            .attr("height", d => innerHeight - y(d.value)),
+                        update => update
+                            .transition()
+                            .duration(1000)
+                            .attr("x", d => x(d.name))
+                            .attr("y", d => y(d.value))
+                            .attr("height", d => innerHeight - y(d.value)),
+                        exit => exit
+                            .transition()
+                            .duration(1000)
+                            .attr("height", 0)
+                            .attr("y", innerHeight)
+                            .remove()
+                    );
                 d3.select("body").on("keydown", function (e) {
                     if (e.key === "Escape") {
                         clearIndFilter();
