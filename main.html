@@ -478,7 +478,7 @@
                 }).sort((a, b) => b.size - a.size).slice(0, 100);
                 console.log("wordData:", wordData);
 
-                const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
+                const colorScale = d3.scaleSequential(d3.interpolatePuBu)
                     .domain([d3.min(wordData, d => d.value), d3.max(wordData, d => d.value)]); // Assuming values are in range [0, 1]
 
                 const layout = d3.layout.cloud()
@@ -501,13 +501,28 @@
 
                     g.selectAll("text")
                         .data(words)
-                        .enter().append("text")
-                        .style("font-size", d => d.size + "px")
-                        .style("font-family", "Impact")
-                        .style("fill", d => colorScale(d.value))
-                        .attr("text-anchor", "middle")
-                        .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
-                        .text(d => d.text);
+                        .join(
+                            enter => enter.append("text")
+                                .style("font-size", d => d.size + "px")
+                                .style("font-family", "Impact")
+                                .style("fill", d => colorScale(d.value))
+                                .attr("text-anchor", "middle")
+                                .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
+                                .text(d => d.text)
+                                .style("opacity", 0)
+                                .transition()
+                                .duration(1000)
+                                .style("opacity", 1),
+                            update => update.transition()
+                                .duration(1000)
+                                .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
+                                .style("font-size", d => d.size + "px")
+                                .style("fill", d => colorScale(d.value)),
+                            exit => exit.transition()
+                                .duration(1000)
+                                .style("opacity", 0)
+                                .remove()
+                        );
                 }
             }
 
