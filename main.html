@@ -637,12 +637,12 @@
                         if (!data.klines[item].length)
                             return acc;
                         val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
-                        return acc - val;
+                        return acc + val;
                     }, 0);
                     value = value / (list.length + 1) / 1e8;
                     rate = rate / (list.length + 1);
                     return { name, value, rate };
-                }).sort((a, b) => b.rate - a.rate);
+                }).sort((a, b) => a.rate - b.rate);
                 console.log("industryDataFull:", industryDataFull);
                 const industryData = industryDataFull.toSpliced(20, 134 - 40);
 
@@ -671,8 +671,10 @@
 
                 industryBarSvg.call(tip);
 
-                const color = d3.scaleSequential(d3.interpolateRdYlGn) // RdYlGn, PiYG
-                    .domain([d3.min(industryData, d => d.rate), d3.max(industryData, d => d.rate)]);
+                const negColor = d3.scaleSequential(d3.interpolateBuGn)
+                    .domain([0, d3.min(industryData, d => d.rate)]);
+                const posiColor = d3.scaleSequential(d3.interpolateOrRd)
+                    .domain([0, d3.max(industryData, d => d.rate)]);
 
                 // Draw bars
                 g.selectAll(".bar")
@@ -684,7 +686,14 @@
                             .attr("width", x.bandwidth())
                             .attr("y", innerHeight) // Start at the bottom
                             .attr("height", 0) // Start with height 0
-                            .attr("fill", d => color(d.rate))
+                            .attr("fill", d => {
+                                console.log(d);
+                                if (d.rate > 0) {
+                                    return posiColor(d.rate);
+                                } else {
+                                    return negColor(d.rate);
+                                }
+                            })
                             .on('mouseover', function (e, d) {
                                 const element = d3.select(this);
                                 element.style("opacity", 0.5);
