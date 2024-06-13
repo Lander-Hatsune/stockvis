@@ -321,14 +321,14 @@
                             },
                             1,
                         );
-                        value = Math.log(amount / (list.length + 1));
-                        avgAmount = amount / (list.length + 1) / 1e8;
+                        value = Math.log(amount);
+                        avgAmount = amount / 1e8;
                         return { fullname, value, avgAmount };
                     });
                     console.log("mapData:", mapData);
                     if (!indFilter) {
-                        mapDataValueMin = 18.5;
-                        mapDataValueMax = 21;
+                        mapDataValueMin = 21.5;
+                        mapDataValueMax = 26;
                     } else {
                         mapDataValueMin = d3.min(mapData, (d) => d.value);
                         mapDataValueMax = d3.max(mapData, (d) => d.value);
@@ -448,12 +448,6 @@
 
                     mapSvg.call(zoom);
 
-                    d3.select("body").on("keydown", function (e) {
-                        if (e.key === "Escape") {
-                            clearMapFilter();
-                            resetZoom();
-                        }
-                    });
                     mapSvg.on('click', function (e) {
                         if (e.target.tagName === 'svg') {
                             clearMapFilter();
