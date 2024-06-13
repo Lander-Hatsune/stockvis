@@ -223,6 +223,7 @@
                 updateWordcloud(timeFiltData);
             }
 
+            let lastMapData = [];
             function updateMap(data) {
                 d3.json("china.json").then(ChinaGeoJson => {
                     // Set dimensions and margins for the map
@@ -244,25 +245,34 @@
                     const path = d3.geoPath().projection(projection);
 
                     const mapData = Object.entries(data.provinces).map(([fullname, list]) => {
-                        value = list.reduce(
+                        amount = list.reduce(
                             (acc, item) => {
                                 if (!(item in data.klines))
                                     return acc;
                                 if (!data.klines[item].length)
                                     return acc;
-                                val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
+                                val = data.klines[item].reduce((acc, k) => acc + k[9], 0) /
+                                    data.klines[item].length;
                                 return acc + val;
                             },
                             1,
                         );
-                        value = Math.log(value);
-                        return { fullname, value };
+                        value = Math.log(amount / (list.length + 1));
+                        avgAmount = amount / (list.length + 1) / 1e8;
+                        return { fullname, value, avgAmount };
                     });
                     console.log("mapData:", mapData);
+                    if (!indFilter) {
+                        mapDataValueMin = 18.5;
+                        mapDataValueMax = 21;
+                    } else {
+                        mapDataValueMin = d3.min(mapData, (d) => d.value);
+                        mapDataValueMax = d3.max(mapData, (d) => d.value);
+                    }
 
                     // Create a color scale
                     const color = d3.scaleSequential(d3.interpolatePuBu) // RdYlGn, PiYG
-                        .domain([d3.min(mapData, d => d.value), d3.max(mapData, d => d.value)]);
+                        .domain([mapDataValueMin, mapDataValueMax]);
 
                     // Clear existing map paths
                     mapSvg.selectAll("path").remove();
@@ -272,9 +282,9 @@
                         .attr('class', 'd3-tip')
                         .html((e, d) => {
                             const province = mapData.find(p => p.fullname === d.properties.fullname);
-                            const value = province ? province.value : "No data";
-                            return `<strong>Province:</strong> <span>${d.properties.fullname}</span><br>
-                    <strong>Value:</strong> <span>${value}</span>`;
+                            const avgAmount = province ? province.avgAmount : "无数据";
+                            return `<strong><span>${d.properties.fullname}</span></strong><br>
+                    <strong>日均成交量(亿元):</strong> <span>${avgAmount.toFixed(2)}</span>`;
                         });
 
                     mapSvg.call(tip);
@@ -282,16 +292,11 @@
                     const g = mapSvg.append("g");
 
                     // Draw the map
+                    console.log("lastMapData:", lastMapData);
                     g.selectAll("path")
                         .data(ChinaGeoJson.features)
                         .enter().append("path")
                         .attr("d", path)
-                        .attr("fill", d => {
-                            const province = mapData.find(p => p.fullname === d.properties.fullname);
-                            return province ? color(province.value) : "#ccc";
-                        })
-                        .attr("stroke", "#333")
-                        .attr("stroke-width", 0.5)
                         .on('mouseover', function (e, d) {
                             const element = d3.select(this);
                             element.style("opacity", 0.5);
@@ -325,6 +330,20 @@
                                 clearMapFilter();
                             }
                         })
+                        .attr("stroke", "#333")
+                        .attr("stroke-width", 0.5)
+                        .attr("fill", d => {
+                            const province = lastMapData.find(p => p.fullname === d.properties.fullname);
+                            return province ? color(province.value) : "#ccc";
+                        })
+                        .transition().duration(1000)
+                        .attr("fill", d => {
+                            const province = mapData.find(p => p.fullname === d.properties.fullname);
+                            return province ? color(province.value) : "#ccc";
+                        })
+                    lastMapData = mapData;
+                    console.log("updated lastMapData:", lastMapData);
+
                     function zoomTo(d) {
                         const [[x0, y0], [x1, y1]] = path.bounds(d);
                         const dx = x1 - x0;
