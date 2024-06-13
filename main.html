@@ -134,10 +134,20 @@
                 .style("stroke", "steelblue") // Set line color
                 .style("stroke-width", 2); // Set line width
 
+
+            const tickFormat = (d) => {
+                const date = new Date(d);
+                if (date.getMonth() === 0) { // January, display year
+                    return d3.timeFormat('%Y')(date);
+                } else {
+                    return d3.timeFormat('%m')(date); // Display month number
+                }
+            };
+
             // Add the X Axis
             timelineSvg.append("g")
                 .attr("transform", "translate(0," + innerHeight + ")")
-                .call(d3.axisBottom(x).ticks(d3.timeYear))
+                .call(d3.axisBottom(x).ticks(d3.timeMonth.every(2)).tickFormat(tickFormat))
                 .selectAll("text")
                 .attr("y", 0)
                 .attr("x", 9)
@@ -145,15 +155,64 @@
                 .attr("transform", "rotate(45)")
                 .style("text-anchor", "start");
 
+
+            // Initialize tooltip
+            const timelineTip = d3.tip()
+                .attr('class', 'd3-tip')
+                .html(d => `<span>${d3.timeFormat("%Y-%m-%d")(d)}</span>`);
+
+            timelineSvg.call(timelineTip);
+
+            // Function to handle mousemove event on the timeline
+            function mousemove(e) {
+                const mouseX = d3.pointer(e)[0];
+                const timestamp = x.invert(mouseX);
+                timelineTip.show(timestamp, this);
+
+                const tipNode = document.querySelector('.d3-tip');
+                const tipWidth = tipNode.clientWidth;
+                const tipHeight = tipNode.offsetHeight;
+
+                // Position the tooltip below the mouse
+                tipNode.style.left = (e.pageX - tipWidth / 2) + 'px';
+                tipNode.style.top = (e.pageY + 15) + 'px'; // Offset below the mouse
+            }
+
+            // Function to handle mouseout event on the timeline
+            function mouseout() {
+                timelineTip.hide();
+            }
+
+
+            // Add event listeners for mousemove, mousedown, mouseup, and mouseout on the timeline
+            timelineSvg.on('mousemove', mousemove)
+                .on('mouseout', mouseout)
+
             // Define a brush
             const brush = d3.brushX()
                 .extent([[0, 0], [innerWidth, innerHeight]])
-                .on("end", brushed);
+                .on('brush', brushing)
+                .on('end', brushed);
 
             // Append the brush to the SVG
             const brushGroup = timelineSvg.append("g")
                 .attr("class", "brush")
                 .call(brush);
+
+            function brushing(e) {
+                const selection = e.selection;
+                const mouseX = selection[1];
+                const timestamp = x.invert(mouseX);
+                timelineTip.show(timestamp, this);
+
+                const tipNode = document.querySelector('.d3-tip');
+                const tipWidth = tipNode.clientWidth;
+                const tipHeight = tipNode.offsetHeight;
+
+                // Position the tooltip below the mouse
+                tipNode.style.left = (e.sourceEvent.pageX - tipWidth / 2) + 'px';
+                tipNode.style.top = (e.sourceEvent.pageY + 15) + 'px'; // Offset below the mouse
+            }
 
             // Function to handle brush events
             function brushed(e) {
@@ -164,15 +223,20 @@
                     const endTime = x.invert(selection[1]);
 
                     // Print selected time range
-                    console.log("Selected time range:", startTime, endTime);
+                    console.log("Selected time range:",
+                        d3.timeFormat("%Y-%m-%d")(startTime),
+                        d3.timeFormat("%Y-%m-%d")(endTime)
+                    );
                     timeL = startTime, timeR = endTime
 
                     updateAll(timeL, timeR);
                     mapFilter = null;
                     indFilter = null;
+                    timelineTip.hide();
                 } else {
                 }
             }
+
             updateAll(d3.min(timelineData, d => parseTime(d[0])),
                 d3.max(timelineData, d => parseTime(d[0])));
 
