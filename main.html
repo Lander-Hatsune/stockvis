@@ -628,7 +628,8 @@
                             return acc;
                         if (!data.klines[item].length)
                             return acc;
-                        val = data.klines[item].reduce((acc, k) => acc + k[9], 0);
+                        val = data.klines[item].reduce((acc, k) => acc + k[9], 0) /
+                            data.klines[item].length;
                         return acc + val;
                     }, 0);
                     rate = list.reduce((acc, item) => {
@@ -639,7 +640,7 @@
                         val = data.klines[item].at(-1)[2] - data.klines[item][0][2];
                         return acc + val;
                     }, 0);
-                    value = value / (list.length + 1) / 1e8;
+                    value = value / 1e8;
                     rate = rate / (list.length + 1);
                     return { name, value, rate };
                 }).sort((a, b) => a.rate - b.rate);
@@ -664,9 +665,9 @@
                 const tip = d3.tip()
                     .attr('class', 'd3-tip')
                     .html((e, d) => {
-                        return `<strong>Industry:</strong> <span>${d.name}</span><br>
-                    <strong>Value:</strong> <span>${d.value}</span><br>
-                    <strong>Rate:</strong> <span>${d.rate}</span>`;
+                        return `<strong><span>${d.name}</span></strong><br>
+                    <strong>日均成交量(亿元):</strong> <span>${d.value.toFixed(2)}</span><br>
+                    <strong>平均涨跌额(元):</strong> <span>${d.rate.toFixed(2)}</span>`;
                     });
 
                 industryBarSvg.call(tip);
