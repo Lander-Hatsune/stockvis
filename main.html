@@ -105,7 +105,7 @@
                 .attr("viewBox", `0 0 ${width} ${height}`);
 
             const timelineData = data["klines"]["SH000001"];
-            console.log(timelineData);
+            console.log("timelineData:", timelineData);
 
             // Set the ranges
             const x = d3.scaleTime().range([0, innerWidth]);
@@ -120,10 +120,9 @@
                 .y(d => y(d[5]));
 
             // Scale the range of the data with padding
-            x.domain(
-                [d3.min(timelineData, d => parseTime(d[0])),
-                d3.max(timelineData, d => parseTime(d[0]))]
-            );
+            const TIME_ST = d3.min(timelineData, d => parseTime(d[0]));
+            const TIME_ED = d3.max(timelineData, d => parseTime(d[0]));
+            x.domain([TIME_ST, TIME_ED]);
             y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
 
             timelineSvg.append("path")
@@ -156,10 +155,65 @@
                 .style("text-anchor", "start");
 
 
+            // Add data for intervals
+            const intervals = [
+                { start: "2019.10.08", end: "2019.10.28", desc: "美国发动贸易战，制裁28家中国科技企业" },
+                { start: "2019.12.19", end: "2020.03.26", desc: "中国投入千亿资金大力扶持高科技企业发展" },
+                { start: "2021.03.01", end: "2021.05.09", desc: "新冠疫苗大规模接种" },
+                { start: "2022.01.31", end: "2022.03.08", desc: "俄乌战争爆发" },
+            ];
+
+            // Parse interval dates
+            intervals.forEach(d => {
+                d.start = d3.timeParse("%Y.%m.%d")(d.start);
+                d.end = d3.timeParse("%Y.%m.%d")(d.end);
+            });
+
+            // Add intervals to the timeline
+            timelineSvg.selectAll(".interval")
+                .data(intervals)
+                .enter()
+                .append("rect")
+                .attr("class", "interval")
+                .attr("x", d => x(d.start))
+                .attr("y", 0)
+                .attr("width", d => x(d.end) - x(d.start))
+                .attr("height", innerHeight)
+                .attr("fill", "lightblue")
+                .attr("opacity", 0.3)
+
+            var lastIntervalClickValid = false;
+            timelineSvg.on("click", function (e, d) {
+                const mouseX = d3.pointer(e)[0];
+                const timestamp = x.invert(mouseX);
+                incident = intervals.find((interval) => interval.start <= timestamp && timestamp <= interval.end);
+                console.log("timeline select interval:", incident);
+                if (incident) {
+                    timelineSvg.selectAll(".interval")
+                        .attr("fill",
+                            (d) => (d.start == incident.start) ? "orange" : "lightblue"
+                        );
+                    updateAll(incident.start, incident.end);
+                    lastIntervalClickValid = true;
+                } else if (lastIntervalClickValid) {
+                    timelineSvg.selectAll(".interval").attr("fill", "lightblue");
+                    updateAll(TIME_ST, TIME_ED);
+                    lastIntervalClickValid = false;
+                }
+            })
+
             // Initialize tooltip
             const timelineTip = d3.tip()
                 .attr('class', 'd3-tip')
-                .html(d => `<span>${d3.timeFormat("%Y-%m-%d")(d)}</span>`);
+                .html(d => {
+                    incident = intervals.find((interval) => interval.start <= d && d <= interval.end);
+                    if (incident) {
+                        return `<span>${d3.timeFormat("%Y-%m-%d")(d)}</span><br>                        
+                        <span>${incident.desc}</span><br>
+                        <span>${d3.timeFormat("%Y-%m-%d")(incident.start)}~${d3.timeFormat("%Y-%m-%d")(incident.end)}</span>`
+                    }
+                    return `<span>${d3.timeFormat("%Y-%m-%d")(d)}</span>`;
+                });
 
             timelineSvg.call(timelineTip);
 
@@ -182,7 +236,6 @@
             function mouseout() {
                 timelineTip.hide();
             }
-
 
             // Add event listeners for mousemove, mousedown, mouseup, and mouseout on the timeline
             timelineSvg.on('mousemove', mousemove)
@@ -215,7 +268,9 @@
             }
 
             // Function to handle brush events
+            var lastSelectionValid;
             function brushed(e) {
+                console.log("brushed event:", e)
                 const selection = e.selection;
                 if (selection) {
                     // Get the selected time range
@@ -233,9 +288,15 @@
                     mapFilter = null;
                     indFilter = null;
                     timelineTip.hide();
-                } else {
+                    lastSelectionValid = true;
+                } else if (lastSelectionValid) {
+                    timeL = TIME_ST;
+                    timeR = TIME_ED;
+                    updateAll(timeL, timeR);
+                    lastSelectionValid = false;
                 }
             }
+
 
             updateAll(d3.min(timelineData, d => parseTime(d[0])),
                 d3.max(timelineData, d => parseTime(d[0])));
@@ -255,6 +316,7 @@
                     ...data,
                     klines: filteredKlines
                 };
+                console.log(`updateAll: filter to time range: ${d3.timeFormat("%Y-%m-%d")(timeL)} ~ ${d3.timeFormat("%Y-%m-%d")(timeR)}`)
                 console.log("filteredData:", filteredData);
                 timeFiltData = filteredData;
 
@@ -688,7 +750,6 @@
                             .attr("y", innerHeight) // Start at the bottom
                             .attr("height", 0) // Start with height 0
                             .attr("fill", d => {
-                                console.log(d);
                                 if (d.rate > 0) {
                                     return posiColor(d.rate);
                                 } else {
