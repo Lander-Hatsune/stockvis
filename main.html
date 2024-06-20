@@ -95,7 +95,7 @@
 
             var timeL, timeR;
             const margin = { top: 5, left: 5, bottom: 20, right: 5, };
-            const width = 1920, height = 100;
+            const width = 1920, height = 150;
             const innerWidth = width - margin.left - margin.right,
                 innerHeight = height - margin.top - margin.bottom;
 
@@ -354,7 +354,7 @@
                 d3.json("china.json").then(ChinaGeoJson => {
                     // Set dimensions and margins for the map
                     const margin = { top: 5, left: 5, bottom: 5, right: 5, };
-                    const width = 500, height = 500;
+                    const width = 1920 / 2, height = 500;
                     const innerWidth = width - margin.left - margin.right,
                         innerHeight = height - margin.top - margin.bottom;
 
@@ -556,7 +556,7 @@
 
             function updateWordcloud(data) {
                 const margin = { top: 20, left: 20, bottom: 20, right: 20, };
-                const width = 500, height = 500;
+                const width = 1920 / 2, height = 500;
 
                 const wordcloudSvg = d3.select("#wordcloud svg")
                     .attr("width", "100%")
@@ -592,7 +592,7 @@
                 let wordData = Object.entries(wordDict).map(([word, vals]) => {
                     return {
                         text: word,
-                        size: (vals.amount - minAmount) / amountLen * 40,
+                        size: (vals.amount - minAmount) / amountLen * 60,
                         value: Math.log(vals.amount),
                     };
                 }).sort((a, b) => b.size - a.size).slice(0, 100);
@@ -674,7 +674,7 @@
             function updateIndustryBar(data) {
                 // Set dimensions for the IndustryBar section
                 const margin = { top: 20, left: 50, bottom: 20, right: 20, };
-                const width = 1920, height = 200;
+                const width = 1920, height = 350;
 
                 const industryBarSvg = d3.select("#industryBar svg")
                     .attr("width", "100%")
