@@ -85,11 +85,6 @@
     </div>
 
     <script>
-        // JavaScript code to create visualizations will go here
-        // D3.js will be used to manipulate the DOM and draw the graphs
-
-        // Set the dimensions and margins of the graph
-        // Load data
         d3.json("data.json").then(data => {
             console.log("data:", data);
 
@@ -107,33 +102,30 @@
             const timelineData = data["klines"]["SH000001"];
             console.log("timelineData:", timelineData);
 
-            // Set the ranges
             const x = d3.scaleTime().range([0, innerWidth]);
             const y = d3.scaleLinear().range([innerHeight, 0]);
 
-            // Parse the timestamp strings into Date objects
             const parseTime = d3.timeParse("%Q");
 
-            // Define the line
             const valueline = d3.line()
                 .x(d => x(d[0]))
                 .y(d => y(d[5]));
 
-            // Scale the range of the data with padding
             const TIME_ST = d3.min(timelineData, d => parseTime(d[0]));
             const TIME_ED = d3.max(timelineData, d => parseTime(d[0]));
             x.domain([TIME_ST, TIME_ED]);
             y.domain([d3.min(timelineData, d => d[5]), d3.max(timelineData, d => d[5])]);
 
+            // timeline line
             timelineSvg.append("path")
                 .data([timelineData])
                 .attr("class", "line")
                 .attr("d", valueline)
-                .style("fill", "none") // Remove area fill
-                .style("stroke", "steelblue") // Set line color
-                .style("stroke-width", 2); // Set line width
+                .style("fill", "none")
+                .style("stroke", "steelblue")
+                .style("stroke-width", 2);
 
-
+            // Custom ticks
             const tickFormat = (d) => {
                 const date = new Date(d);
                 if (date.getMonth() === 0) { // January, display year
@@ -155,7 +147,6 @@
                 .style("text-anchor", "start");
 
 
-            // Add data for intervals
             const intervals = [
                 { start: "2019.10.08", end: "2019.10.28", desc: "美国发动贸易战，制裁28家中国科技企业" },
                 { start: "2019.12.19", end: "2020.03.26", desc: "中国投入千亿资金大力扶持高科技企业发展" },
@@ -182,6 +173,7 @@
                 .attr("fill", "lightblue")
                 .attr("opacity", 0.3)
 
+            // Add on-click event to timeline
             var lastIntervalClickValid = false;
             timelineSvg.on("click", function (e, d) {
                 const mouseX = d3.pointer(e)[0];
@@ -217,7 +209,7 @@
 
             timelineSvg.call(timelineTip);
 
-            // Function to handle mousemove event on the timeline
+            // Display tip to mousemove
             function mousemove(e) {
                 const mouseX = d3.pointer(e)[0];
                 const timestamp = x.invert(mouseX);
@@ -231,23 +223,19 @@
                 tipNode.style.left = (e.pageX - tipWidth / 2) + 'px';
                 tipNode.style.top = (e.pageY + 15) + 'px'; // Offset below the mouse
             }
-
-            // Function to handle mouseout event on the timeline
             function mouseout() {
                 timelineTip.hide();
             }
 
-            // Add event listeners for mousemove, mousedown, mouseup, and mouseout on the timeline
             timelineSvg.on('mousemove', mousemove)
                 .on('mouseout', mouseout)
 
-            // Define a brush
+            // Add brush to select
             const brush = d3.brushX()
                 .extent([[0, 0], [innerWidth, innerHeight]])
                 .on('brush', brushing)
                 .on('end', brushed);
 
-            // Append the brush to the SVG
             const brushGroup = timelineSvg.append("g")
                 .attr("class", "brush")
                 .call(brush);
@@ -262,7 +250,6 @@
                 const tipWidth = tipNode.clientWidth;
                 const tipHeight = tipNode.offsetHeight;
 
-                // Position the tooltip below the mouse
                 tipNode.style.left = (e.sourceEvent.pageX - tipWidth / 2) + 'px';
                 tipNode.style.top = (e.sourceEvent.pageY + 15) + 'px'; // Offset below the mouse
             }
@@ -296,7 +283,6 @@
                     lastSelectionValid = false;
                 }
             }
-
 
             updateAll(d3.min(timelineData, d => parseTime(d[0])),
                 d3.max(timelineData, d => parseTime(d[0])));
@@ -352,19 +338,16 @@
             let lastMapData = [];
             function updateMap(data) {
                 d3.json("china.json").then(ChinaGeoJson => {
-                    // Set dimensions and margins for the map
                     const margin = { top: 5, left: 5, bottom: 5, right: 5, };
                     const width = 1920 / 2, height = 500;
                     const innerWidth = width - margin.left - margin.right,
                         innerHeight = height - margin.top - margin.bottom;
 
-                    // Append the SVG for the map
                     const mapSvg = d3.select("#map svg")
                         .attr("width", "100%")
                         .attr("height", "100%")
                         .attr("viewBox", `0 0 ${width} ${height}`);
 
-                    // Create a projection and path generator
                     const projection = d3.geoMercator()
                         .fitSize([innerWidth, innerHeight], ChinaGeoJson);
 
@@ -396,14 +379,12 @@
                         mapDataValueMax = d3.max(mapData, (d) => d.value);
                     }
 
-                    // Create a color scale
                     const color = d3.scaleSequential(d3.interpolatePuBu) // RdYlGn, PiYG
                         .domain([mapDataValueMin, mapDataValueMax]);
 
                     // Clear existing map paths
                     mapSvg.selectAll("path").remove();
 
-                    // Initialize tooltip
                     const tip = d3.tip()
                         .attr('class', 'd3-tip')
                         .html((e, d) => {
@@ -417,7 +398,6 @@
 
                     const g = mapSvg.append("g");
 
-                    // Draw the map
                     console.log("lastMapData:", lastMapData);
                     g.selectAll("path")
                         .data(ChinaGeoJson.features)
@@ -470,6 +450,7 @@
                     lastMapData = mapData;
                     console.log("updated lastMapData:", lastMapData);
 
+                    // zoomTo one province/city
                     function zoomTo(d) {
                         const [[x0, y0], [x1, y1]] = path.bounds(d);
                         const dx = x1 - x0;
@@ -487,7 +468,7 @@
                             );
                     }
 
-                    // Function to reset zoom
+                    // resetZoom to global
                     function resetZoom() {
                         mapSvg.transition()
                             .duration(750)
@@ -510,6 +491,7 @@
 
                     mapSvg.call(zoom);
 
+                    // Empty click
                     mapSvg.on('click', function (e) {
                         if (e.target.tagName === 'svg') {
                             clearMapFilter();
@@ -517,8 +499,9 @@
                         }
                     });
 
+                    /* legend section, deprecated */
                     // Clear existing legend
-                    mapSvg.selectAll(".legend").remove();
+                    // mapSvg.selectAll(".legend").remove();
 
                     // // Add a vertical legend using discrete steps
                     // const legendHeight = 300;
@@ -566,6 +549,7 @@
                 const innerWidth = width - margin.left - margin.right,
                     innerHeight = height - margin.top - margin.bottom;
 
+                // Aggregate wordDict data
                 const wordDict = {};
                 Object.entries(data.companies).forEach(([symbol, comp]) => {
                     if (!(symbol in data.klines))
@@ -589,6 +573,7 @@
                 const minAmount = d3.min(Object.entries(wordDict), ([word, vals]) => vals.amount);
                 const maxAmount = d3.max(Object.entries(wordDict), ([word, vals]) => vals.amount);
                 const amountLen = maxAmount - minAmount;
+                // Format wordData
                 let wordData = Object.entries(wordDict).map(([word, vals]) => {
                     return {
                         text: word,
@@ -672,7 +657,6 @@
             }
 
             function updateIndustryBar(data) {
-                // Set dimensions for the IndustryBar section
                 const margin = { top: 20, left: 50, bottom: 20, right: 20, };
                 const width = 1920, height = 350;
 
@@ -684,6 +668,7 @@
                 const innerWidth = width - margin.left - margin.right;
                 const innerHeight = height - margin.top - margin.bottom;
 
+                // Aggregate industryData
                 const industryDataFull = Object.entries(data.industries).map(([name, list]) => {
                     value = list.reduce((acc, item) => {
                         if (!(item in data.klines))
@@ -705,11 +690,10 @@
                     value = value / 1e8;
                     rate = rate / (list.length + 1);
                     return { name, value, rate };
-                }).sort((a, b) => a.rate - b.rate);
+                }).sort((a, b) => a.rate - b.rate); // sort by rate
                 console.log("industryDataFull:", industryDataFull);
                 const industryData = industryDataFull.toSpliced(20, 134 - 40);
 
-                // Create scales for the x and y axes
                 const x = d3.scaleBand()
                     .range([0, innerWidth])
                     .padding(0.1)
@@ -723,7 +707,6 @@
                 const g = industryBarSvg.append("g")
                     .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-                // Initialize tooltip
                 const tip = d3.tip()
                     .attr('class', 'd3-tip')
                     .html((e, d) => {
@@ -734,6 +717,7 @@
 
                 industryBarSvg.call(tip);
 
+                // Separate color scales for positive/negative rate
                 const negColor = d3.scaleSequential(d3.interpolateBuGn)
                     .domain([0, d3.min(industryData, d => d.rate)]);
                 const posiColor = d3.scaleSequential(d3.interpolateOrRd)
@@ -747,8 +731,8 @@
                             .attr("class", "bar")
                             .attr("x", d => x(d.name))
                             .attr("width", x.bandwidth())
-                            .attr("y", innerHeight) // Start at the bottom
-                            .attr("height", 0) // Start with height 0
+                            .attr("y", innerHeight)
+                            .attr("height", 0)
                             .attr("fill", d => {
                                 if (d.rate > 0) {
                                     return posiColor(d.rate);
@@ -805,18 +789,17 @@
                         clearIndFilter();
                     }
                 });
+                // Empty click
                 industryBarSvg.on('click', function (e) {
                     if (e.target.tagName === 'svg') {
                         clearIndFilter();
                     }
                 });
 
-                // Add the x Axis
                 g.append("g")
                     .attr("transform", `translate(0, ${innerHeight})`)
                     .call(d3.axisBottom(x));
 
-                // Add the y Axis
                 g.append("g")
                     .call(d3.axisLeft(y));
             }
